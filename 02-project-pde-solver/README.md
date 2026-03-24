@@ -2,7 +2,7 @@
 
 > A finite-difference solver for the 2D transient heat equation with implicit Euler time-stepping, Newton iteration for nonlinear radiation terms, and VTK output for visualization. Built as part of a Scientific Computing course (July 2024).
 
-## 🎯 Context & Objective
+## Context & Objective
 
 This project solves the two-dimensional transient heat equation:
 
@@ -19,7 +19,7 @@ The goal was to integrate C++, CMake, Docker, Bash, and GitLab CI/CD into a work
 
 ---
 
-## 🏗 Project Structure
+## Project Structure
 
 ```
 project-02-pde-solver/
@@ -38,7 +38,7 @@ project-02-pde-solver/
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 The solver operates in two modes depending on the nonlinearity coefficient **β**:
 
@@ -53,7 +53,7 @@ The entire environment — including VTK compiled from source — is containeriz
 
 ---
 
-## 🔬 Key Code Deep Dives
+## Key Code Deep Dives
 
 ### 1. Implicit Linear System Assembly — `main_script.cpp`
 
@@ -153,7 +153,7 @@ double source_func(double x, double y, double t,
 
 ---
 
-## 📈 Results
+## Results
 
 ### Linear Case (β = 0)
 The solver produces L2 error norms between 0.005 and 0.025 across different configurations of timesteps (1–100) and frequency coefficients γ. The errors decrease with finer temporal resolution, confirming the solver converges as expected.
@@ -163,7 +163,7 @@ The Newton iteration converges but requires significantly more iterations than e
 
 ---
 
-## 🐳 How to Run
+## How to Run
 
 ```bash
 # Build the Docker image (compiles VTK from source — takes a while)
@@ -188,7 +188,7 @@ docker run -it -v $(pwd)/results:/app/build/results pde-solver
 
 ---
 
-## 💡 Reflection
+## Reflection
 
 - **Linear solver works well** — L2 norms confirm correct convergence against the analytic solution.
 - **Newton iteration has a known issue** — excessive iterations and counterintuitive β-dependency point to a bug I didn't resolve in time. Being transparent about this: I understand *what* should happen, even though the implementation has an unresolved issue.
