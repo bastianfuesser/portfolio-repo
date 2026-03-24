@@ -1,0 +1,51 @@
+#!/bin/bash
+# Standard input handling or default values
+DEFAULT_GRIDPOINTS_X=16
+DEFAULT_GRIDPOINTS_Y=16
+DEFAULT_TIMESTEPS=10
+DEFAULT_WRITE_PER_T=1
+DEFAULT_RADI_COEF_BETA=0.0
+DEFAULT_FREQ_COEF_GAMMA=1
+DEFAULT_COEF_ALPHA=1
+DEFAULT_TOLERANCE=1e-6
+
+echo "Change number of x-gridpoints? (Default: $DEFAULT_GRIDPOINTS_X):"
+read USER_GRIDPOINTS_X
+GRIDPOINTS_X=${USER_GRIDPOINTS_X:-$DEFAULT_GRIDPOINTS_X}
+
+echo "Change number of y-gridpoints? (Default: $DEFAULT_GRIDPOINTS_Y):"
+read USER_GRIDPOINTS_Y
+GRIDPOINTS_Y=${USER_GRIDPOINTS_Y:-$DEFAULT_GRIDPOINTS_Y}
+
+echo "Change number of timesteps? (Default: $DEFAULT_TIMESTEPS):"
+read USER_TIMESTEPS
+TIMESTEPS=${USER_TIMESTEPS:-$DEFAULT_TIMESTEPS}
+
+echo "Change write per timestep? (Default: $DEFAULT_WRITE_PER_T):"
+read USER_WRITE_PER_T
+WRITE_PER_T=${USER_WRITE_PER_T:-$DEFAULT_WRITE_PER_T}
+
+echo "Change beta? (Default: $DEFAULT_RADI_COEF_BETA):"
+read USER_RADI_COEF_BETA
+RADI_COEF_BETA=${USER_RADI_COEF_BETA:-$DEFAULT_RADI_COEF_BETA}
+
+echo "Change gamma? (Default: $DEFAULT_FREQ_COEF_GAMMA):"
+read USER_FREQ_COEF_GAMMA
+FREQ_COEF_GAMMA=${USER_FREQ_COEF_GAMMA:-$DEFAULT_FREQ_COEF_GAMMA}
+
+echo "Change alpha? (Default: $DEFAULT_COEF_ALPHA):"
+read USER_COEF_ALPHA
+COEF_ALPHA=${USER_COEF_ALPHA:-$DEFAULT_COEF_ALPHA}
+
+echo "Change precision for Newton-Iteration? (Default: $DEFAULT_TOLERANCE):"
+read USER_TOLERANCE
+TOLERANCE=${USER_TOLERANCE:-$DEFAULT_TOLERANCE}
+
+echo "Running simulation_program..."
+
+# Run the compiled program with user-specified parameters
+./simulation_program $GRIDPOINTS_X $GRIDPOINTS_Y $TIMESTEPS $WRITE_PER_T $RADI_COEF_BETA $FREQ_COEF_GAMMA $COEF_ALPHA $TOLERANCE
+
+if [ -d "/app/build/results" ]; then
+    chmod -R 777 /app/build/results
+fi
