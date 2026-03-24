@@ -15,7 +15,7 @@ This project sets up and runs molecular dynamics simulations using the ClayFF fo
 
 ---
 
-## Project Structure
+## 🏗 Project Structure
 
 ```
 project-01-md-simulation/
@@ -28,15 +28,26 @@ project-01-md-simulation/
 │   ├── analysis/
 │   │   ├── dynamics/
 │   │   │   ├── calculate_msd_isf.py             # MSD, ISF, diffusion, KWW relaxation times
-│   │   │   └── calculate_van_hove_self.py       # Van Hove self-correlation functions
-│   │   └── structural/
-│   │       └── calculating_rdf_CN.py            # RDF and coordination numbers (modified mdevaluate)
+│   │   │   ├── calculate_van_hove_self.py       # Van Hove self-correlation functions
+│   │   │   ├── create_nojump.py                 # Unwrapped trajectory generation
+│   │   │   └── ...                              # Additional dynamics modules
+│   │   ├── structural/
+│   │   │   ├── calculating_rdf_CN.py            # RDF and coordination numbers (modified mdevaluate)
+│   │   │   ├── xy_density.py                    # 2D spatial density maps in z-slabs (fully custom)
+│   │   │   └── ...                              # Additional structural analysis
+│   │   └── layered_density/
+│   │       ├── calculate_z_density_profile.py   # Z-density profiles
+│   │       └── ...
 │   └── cell_generation/                         # Simulation cell construction (not highlighted)
 ├── plotting/
 │   ├── plotting_msd_isf.py                      # MSD and ISF visualization
-│   └── plotting_vhs.py                          # Van Hove 2D + 3D visualization
+│   ├── plotting_vhs.py                          # Van Hove 2D + 3D visualization
+│   ├── diff_kww1e_plotting.py                   # Diffusion and relaxation time plots
+│   └── ...                                      # Additional plotting modules
 └── README.md
 ```
+
+> Only selected scripts are included in this repository. The full analysis suite contains additional modules for z-density profiles, nojump trajectory generation, diffusion/relaxation comparison plots, and more — all following the same self-contained design pattern.
 
 ### Simulation directory layout (on the HPC cluster)
 
@@ -196,16 +207,18 @@ t_1e = md.functions.kww_1e(fit[0], fit[1], fit[2])
 
 ---
 
-### 4. Modified RDF with Spatial Resolution — `scripts/analysis/structural/calculating_rdf_CN.py`
+### 4. Spatially Resolved Structural Analysis — `scripts/analysis/structural/calculating_rdf_CN.py`
 
-**What it does:** Computes radial distribution functions (RDF) and coordination numbers between atom pairs — but with a key extension: spatial filtering that restricts the analysis to atoms within a specified distance of the clay layer center.
+**What it does:** Computes radial distribution functions (RDF) and coordination numbers between atom pairs — but with a key extension I designed: **spatial filtering** that restricts the analysis to atoms within a specified distance of the clay layer center. This required both new analysis logic and modifications to the underlying `mdevaluate` library.
 
-**Why it matters:** In a layered clay system, the local structure near the clay surface is fundamentally different from the interlayer midplane. A bulk-averaged RDF would smear this out. By using the octahedral lithium (lio) positions to dynamically locate each clay layer and filtering atoms by z-distance, the analysis captures **layer-specific** structural information.
+**Why it matters:** In a layered clay system, the local structure near the clay surface is fundamentally different from the interlayer midplane. A bulk-averaged RDF would smear this out. The spatial resolution approach captures **layer-specific** structural information — essential for understanding confinement effects.
 
-**The critical modification:** The original `mdevaluate` library functions (`rdf`, `next_neighbors`, `coordination_number`, `time_average`) assumed non-empty atom selections. When the spatial filter removes all atoms for a given frame (e.g., at very small slit sizes), the original code crashed. I modified the entire function chain to handle empty selections gracefully:
+**What I designed from scratch:**
+
+The `spatially_resolved_rdf()` function and the spatial filtering mechanism inside `coordination_number()` are my own work. They use the octahedral lithium (lio) positions to dynamically locate each clay layer at each frame, then select only atoms within a given z-distance:
 
 ```python
-def coordination_number(frame_a, frame_b, lio_frame=None, bins=..., layer_distance=None, ...):
+def coordination_number(frame_a, frame_b, lio_frame=None, layer_distance=None, ...):
     if lio_frame is not None:
         # Dynamically locate clay layers from octahedral Li positions
         center_pos1, center_pos2 = get_layers_centerpos(lio_frame)
@@ -213,14 +226,31 @@ def coordination_number(frame_a, frame_b, lio_frame=None, bins=..., layer_distan
         mask = (np.abs(z_coords - center_pos1) < layer_distance) | \
                (np.abs(z_coords - center_pos2) < layer_distance)
         frame_a = frame_a[mask].copy()
-
-    # Handle empty selection after spatial filtering
-    if len(frame_a) == 0:
-        return np.zeros(len(bins))
     ...
 ```
 
-The custom `rdf()` function also handles both orthorhombic and non-orthorhombic periodic boundary conditions, using KDTree for efficient neighbor searching with explicit PBC point replication as a fallback:
+The spatial approach also required a new time-averaging function. The original `mdevaluate` `time_average()` accepts two coordinate sets (atoms A and B). My `time_average_three_inputs()` extends this to accept a third frame — the reference layer positions (lio) needed to locate the clay sheets at each timestep:
+
+```python
+def time_average_three_inputs(function, coordinates, coordinates_b, coordinates_c, skip=0.1, segments=100):
+    frame_indices = np.unique(np.int_(
+        np.linspace(len(coordinates) * skip, len(coordinates) - 1, num=segments)
+    ))
+    result = [
+        function(coordinates[i], coordinates_b[i], coordinates_c[i])
+        for i in frame_indices
+    ]
+    # Filter out empty frames and average
+    result = np.array(result)
+    mask = np.all(result == np.zeros_like(result[0]), axis=tuple(range(1, result.ndim)))
+    return np.mean(result[~mask], axis=0) if len(result[~mask]) > 0 else np.zeros_like(result[0])
+```
+
+**What I modified in `mdevaluate`:**
+
+The original library functions (`rdf`, `next_neighbors`, `coordination_number`, `time_average`) assumed non-empty atom selections. When the spatial filter removes all atoms for a given frame (e.g., at very small slit sizes), the original code crashed. I modified the entire function chain to handle empty selections gracefully — returning zero arrays and filtering out empty frames before averaging.
+
+The custom `rdf()` and `next_neighbors()` functions also handle both orthorhombic and non-orthorhombic periodic boundary conditions, using KDTree with built-in PBC for the fast path and explicit point replication as a fallback:
 
 ```python
 def next_neighbors(atoms, query_atoms=None, distance_upper_bound=np.inf, ...):
@@ -237,7 +267,50 @@ def next_neighbors(atoms, query_atoms=None, distance_upper_bound=np.inf, ...):
 
 ---
 
-### 5. Automated Visualization — `plotting/`
+### 5. 2D Spatial Density Mapping — `scripts/analysis/structural/xy_density.py`
+
+**What it does:** Computes time-averaged atom density maps in the xy-plane (parallel to the clay sheets), resolved into 0.2 Å z-slabs through the interlayer. This produces a full 3D density field showing exactly where Li, water oxygen, and water hydrogen prefer to sit within the confined space.
+
+**Why it matters:** This is entirely my own analysis — not a wrapper around a library function. It answers a key question: do confined species form ordered structures parallel to the clay surface, and how does that ordering change with distance from the sheet? The output feeds directly into 2D heatmap visualizations that reveal adsorption sites, hydration shell structures, and preferential ion positions.
+
+**The core algorithm:**
+
+For each trajectory frame, the script dynamically detects the clay layer positions, then applies a wrapping trick to combine both interlayer spaces into one — doubling the sampling statistics:
+
+```python
+for idx_frame in range(sim_step_num):
+    frame = sub_trj[idx_frame]
+
+    # Detect lower layer position (fluctuates each frame)
+    layer_pos = np.min(center_pos[idx_frame])
+
+    # Fold periodic box so both interlayer spaces overlap
+    frame[:, 2] = np.mod(frame[:, 2], (box[2] / 2))
+
+    # Atoms below the layer center get wrapped on top → single combined water layer
+    diff = frame[:, 2] - layer_pos
+    mask_combine_water = diff <= 0
+    frame[:, 2][mask_combine_water] += box[2] / 2
+    frame[:, 2] = frame[:, 2] - layer_pos  # Re-center origin at clay surface
+
+    # Bin into 3D histogram (z-slab × x × y)
+    mask = frame[:, 2] <= binned_height
+    data = frame[mask][:, [2, 0, 1]]
+    count += np.histogramdd(data, bins=bins)[0].astype(int)
+```
+
+The supercell periodicity is exploited for the xy-binning — the full simulation box contains 8×4 repeating unit cells, so the density is folded back into a single unit cell to further improve statistics. Final normalization converts raw counts to a proper number density [atoms/Å³]:
+
+```python
+# Normalization: bin volume × number of frames × wrapping multiplier (8×4×2 periodic images)
+wrapping_multiplier = 8 * 4 * 2
+norm = wrapping_multiplier * bin_volume * sim_step_num
+normalized_data = count.astype(float) / norm
+```
+
+---
+
+### 6. Automated Visualization — `plotting/`
 
 **What it does:** Generates publication-quality plots from the analysis output. Automatically adapts between single-temperature comparisons (multiple atom types on one plot) and temperature-sweep visualizations (colormap across temperatures).
 

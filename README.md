@@ -19,9 +19,9 @@ This repository showcases selected projects from my academic research and course
 
 ## Skills & Tools
 
-- **Languages:** Python, C++, Bash, SQL
+- **Languages:** Python, C++, Bash
 - **Scientific Computing:** GROMACS, SLURM, HPC cluster workflows, numerical methods
-- **Data & Analysis:** NumPy, SciPy, Matplotlib, Pandas, mdevaluate
+- **Data & Analysis:** NumPy, SciPy, Matplotlib, mdevaluate
 - **Systems & DevOps:** CMake, Docker, Linux, Git
 - **Libraries:** Eigen, VTK, pymatgen, KDTree
 
