@@ -1,0 +1,1 @@
+Timestep: 10, L2 Norm: 0.0108874
