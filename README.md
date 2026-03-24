@@ -1,4 +1,4 @@
-# Hi, I'm Bastian Füßer
+# 👋 Hi, I'm Bastian Füßer
 
 **Scientific Computing & Data Science Portfolio**
 
@@ -29,5 +29,5 @@ This repository showcases selected projects from my academic research and course
 
 ## Contact
 
-- **Email:** [your.email@example.com]
-- **LinkedIn:** [linkedin.com/in/yourprofile](https://linkedin.com/in/yourprofile)
+- **Email:** [bastian.fuesser@gmail.com]
+- **LinkedIn:** [linkedin.com/in/bastian-fuesser](https://linkedin.com/in/bastian-fuesser)

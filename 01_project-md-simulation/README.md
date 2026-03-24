@@ -2,7 +2,7 @@
 
 > HPC-scale molecular dynamics workflow for studying water and lithium dynamics in layered clay minerals. Includes automated SLURM job orchestration across a temperature × slit-size parameter sweep, a multi-stage GROMACS simulation pipeline, and parallelized Python analysis tools — with custom modifications to the `mdevaluate` library for spatially resolved structural analysis.
 
-## Context & Objective
+## 🎯 Context & Objective
 
 Fluorohectorite is a synthetic layered clay mineral with nanoscale interlayer spaces that confine water molecules and lithium ions. Understanding how confinement affects water dynamics and ion transport is relevant to applications in energy storage, catalysis, and geological fluid transport.
 
@@ -12,6 +12,7 @@ This project sets up and runs molecular dynamics simulations using the ClayFF fo
 - **My role:** Sole developer of the entire simulation and analysis pipeline, self-taught. The starting point was a single 6,000-line Jupyter notebook with hardcoded absolute paths and no loops — every simulation and plot was a manual copy-paste job. I redesigned the entire workflow from scratch into the modular, automated pipeline shown here.
 - **Design philosophy:** Every analysis script is deliberately self-contained (no shared utility module). This was a conscious decision — my supervisor's group had limited programming experience, and I wanted anyone inheriting this codebase to be able to open any single script and understand it without chasing imports across files.
 - **Tech stack:** GROMACS, SLURM, Bash, Python, Eigen (via mdevaluate), Matplotlib, NumPy, SciPy
+- **Full thesis:** See [`docs/masters_thesis.pdf`](./docs/masters_thesis.pdf) for the complete academic document including methodology, results, and discussion.
 
 ---
 
@@ -76,7 +77,7 @@ temperature_variation/
 
 ---
 
-## Key Code Deep Dives
+## 🔬 Key Code Deep Dives
 
 ### 1. Three-Level HPC Orchestration — `scripts/orchestration/`
 
@@ -337,7 +338,7 @@ else:
 
 ---
 
-## Simulation Pipeline (per parameter point)
+## ⚙️ Simulation Pipeline (per parameter point)
 
 Each (temperature, slit size) combination runs a four-stage GROMACS pipeline on the SLURM cluster (12 CPUs + 1 GPU):
 
@@ -350,7 +351,7 @@ Each (temperature, slit size) combination runs a four-stage GROMACS pipeline on 
 
 ---
 
-## Reflection
+## 💡 Reflection
 
 - **Starting point:** I inherited a 6,000-line Jupyter notebook where every simulation path, every plot, and every parameter was hardcoded — no loops, no functions, no abstraction. For each new simulation, the previous approach was to duplicate the notebook and manually edit paths. My first task was understanding the science; my second was recognizing that the tooling had to be rebuilt from the ground up.
 - **Most valuable skill gained:** Designing reproducible HPC workflows. The template → sweep → dispatch → analyze chain means I can set up a new parameter study in minutes, not days.
